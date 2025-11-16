@@ -3,24 +3,33 @@
 > Plataforma serverless para reportar, monitorear y gestionar incidentes dentro del campus UTEC en tiempo real
 
 [![AWS](https://img.shields.io/badge/AWS-Serverless-orange)](https://aws.amazon.com)
+[![Amplify](https://img.shields.io/badge/AWS-Amplify-orange)](https://aws.amazon.com/amplify/)
+[![WebSocket](https://img.shields.io/badge/WebSocket-Real--time-blue)](https://aws.amazon.com/api-gateway/)
+[![Airflow](https://img.shields.io/badge/Apache-Airflow-teal)](https://airflow.apache.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ## 📋 Descripción
 
-**AlertaUTEC** es una solución serverless desarrollada en 24 horas para la Hackathon Cloud Computing. Permite a estudiantes, personal y autoridades reportar y gestionar incidentes del campus de manera ágil y centralizada.
+**AlertaUTEC** es una solución serverless desarrollada para la Hackathon Cloud Computing que cumple con **todos los requisitos técnicos obligatorios**: AWS Amplify, WebSocket API y Apache Airflow. Permite a estudiantes, personal y autoridades reportar y gestionar incidentes del campus de manera ágil y centralizada.
+
+### ⭐ Requisitos Obligatorios Cumplidos
+
+- 🚀 **AWS Amplify**: Frontend React con CI/CD automático desde GitHub
+- 🔌 **WebSocket API**: Comunicación en tiempo real <100ms (sin polling)
+- 🔄 **Apache Airflow (MWAA)**: Orquestación de workflows automatizados
 
 ### ✨ Características Principales
 
 - ✅ **CRUD Completo**: Crear, listar, actualizar y eliminar incidentes
+- ✅ **Tiempo Real**: WebSockets para actualizaciones instantáneas
 - ✅ **Upload de Fotos**: Adjuntar evidencia visual a los reportes
-- ✅ **Actualizaciones Automáticas**: Polling cada 5 segundos para refrescar datos
+- ✅ **Workflows Automatizados**: Clasificación, notificaciones y reportes con Airflow
 - ✅ **Panel Administrativo**: Vista especial para autoridades
 - ✅ **100% Serverless**: Sin servidores que gestionar
-- ✅ **Costo Cero**: Dentro de AWS Free Tier
 
 ## 🏗️ Arquitectura
 
-### MVP Implementado (24 horas)
+### Stack Tecnológico Completo
 
 ```
 ┌─────────────┐
@@ -28,40 +37,74 @@
 └──────┬──────┘
        │
        ▼
-┌─────────────────┐
-│ S3 Frontend     │  (HTML/CSS/JS + Bootstrap)
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ API Gateway     │  (REST API)
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Lambda Handler  │  (Python 3.11)
-└────┬────────────┘
-     │
-     ├──► DynamoDB (Incidentes)
-     └──► S3 (Fotos)
+┌─────────────────────────┐
+│   AWS Amplify (React)   │ ⭐ Frontend con CI/CD
+│   CloudFront + HTTPS    │
+└──────┬──────────────────┘
+       │
+       ├──────────────────┐
+       │                  │
+       ▼                  ▼
+┌──────────────┐   ┌─────────────────┐
+│ API Gateway  │   │ API Gateway     │ ⭐ WebSocket
+│ REST API     │   │ WebSocket API   │    Real-time
+└──────┬───────┘   └────┬────────────┘
+       │                │
+       ▼                ▼
+┌────────────────────────────────┐
+│     AWS Lambda Functions       │
+│  - incident-handler (CRUD)     │
+│  - ws-connect, ws-disconnect   │
+│  - notify-changes (Stream)     │
+└──────┬─────────────────────────┘
+       │
+       ├──► DynamoDB (con Streams) ──► Lambda notify
+       └──► S3 (Fotos)
+       
+┌────────────────────────────┐
+│ Apache Airflow (MWAA)      │ ⭐ Orquestación
+│  - DAG: Clasificación      │
+│  - DAG: Notificaciones     │
+│  - DAG: Reportes           │
+└────────────────────────────┘
 ```
 
 ### Servicios AWS Utilizados
 
-| Servicio | Propósito | Costo |
-|----------|-----------|-------|
-| **S3** | Hosting frontend + almacenamiento fotos | $0 (Free Tier) |
-| **API Gateway** | REST API endpoints | $0 (Free Tier) |
-| **Lambda** | Lógica de negocio serverless | $0 (Free Tier) |
-| **DynamoDB** | Base de datos NoSQL | $0 (Free Tier) |
-| **CloudWatch** | Logs y monitoreo | $0 (Free Tier) |
+| Servicio | Propósito | Requisito |
+|----------|-----------|-----------|
+| **AWS Amplify** | Hosting frontend React + CI/CD | ⭐ Obligatorio |
+| **API Gateway WebSocket** | Comunicación tiempo real | ⭐ Obligatorio |
+| **Apache Airflow (MWAA)** | Orquestación workflows | ⭐ Obligatorio |
+| **API Gateway REST** | CRUD endpoints | Core |
+| **Lambda** | Lógica de negocio serverless | Core |
+| **DynamoDB** | Base de datos NoSQL + Streams | Core |
+| **S3** | Almacenamiento fotos + DAGs | Core |
+| **Cognito** | Autenticación y autorización | Seguridad |
+| **CloudWatch** | Logs y monitoreo | Observabilidad |
 
-**Total**: **$0/mes** dentro de Free Tier
+### Flujo de Tiempo Real (WebSocket)
+
+```
+Incidente actualizado → DynamoDB
+                         ↓
+                    DynamoDB Stream
+                         ↓
+              Lambda notify-changes
+                         ↓
+                    WebSocket API
+                         ↓
+         Broadcast a todos los clientes
+                         ↓
+          Frontend actualiza UI (<100ms)
+```
 
 ## 🚀 Demo
 
-**URL Frontend**: `http://alertautec-frontend.s3-website-us-east-1.amazonaws.com`
-**API Endpoint**: `https://YOUR-API-ID.execute-api.us-east-1.amazonaws.com/prod`
+**Frontend URL**: Desplegado automáticamente en Amplify
+**REST API**: `https://YOUR-API-ID.execute-api.us-east-1.amazonaws.com/prod`
+**WebSocket API**: `wss://YOUR-WS-ID.execute-api.us-east-1.amazonaws.com/prod`
+**Airflow UI**: `https://YOUR-ENV.airflow.us-east-1.amazonaws.com/home`
 
 ### Screenshots
 
@@ -71,88 +114,261 @@
 
 ```
 Hackthon_CloudComputing/
-├── frontend/
-│   ├── index.html          # Lista de incidentes
-│   ├── crear.html          # Formulario crear incidente
-│   ├── detalle.html        # Ver detalle
-│   ├── login.html          # Selector de rol
-│   ├── app.js              # Lógica JavaScript
-│   └── styles.css          # Estilos
+├── frontend/                   # React App para Amplify
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── IncidentsList.js
+│   │   │   ├── CreateIncident.js
+│   │   │   └── WebSocketProvider.js  # WebSocket hook
+│   │   ├── App.js
+│   │   └── index.js
+│   ├── package.json
+│   └── amplify.yml             # Amplify build config
 ├── backend/
-│   ├── lambda_function.py  # Lambda handler principal
-│   ├── requirements.txt    # Dependencias Python
-│   └── README.md           # Instrucciones deploy
+│   ├── lambda/
+│   │   ├── incident-handler/   # CRUD REST API
+│   │   ├── ws-connect/         # WebSocket connect
+│   │   ├── ws-disconnect/      # WebSocket disconnect
+│   │   └── notify-changes/     # DynamoDB Stream trigger
+│   └── requirements.txt
+├── airflow/
+│   ├── dags/
+│   │   ├── classify_incidents_dag.py
+│   │   ├── send_notifications_dag.py
+│   │   └── generate_reports_dag.py
+│   └── plugins/
 ├── docs/
-│   ├── ARQUITECTURA_MVP_24H.md      # Documentación completa
-│   ├── DIAGRAMA_ERASER_IO.md        # Código diagramas
-│   └── arquitectura.png             # Diagrama visual
-├── challenge.md            # Descripción del reto
-├── bases.md                # Bases de la hackathon
-└── README.md               # Este archivo
+│   ├── ARQUITECTURA_FINAL.md   # Documentación completa
+│   ├── DIAGRAMA_FINAL.md       # Código diagramas
+│   └── arquitectura.png        # Diagrama visual
+├── infrastructure/             # IaC (opcional)
+│   ├── cloudformation/
+│   └── terraform/
+├── challenge.md
+├── bases.md
+└── README.md
 ```
 
 ## 🛠️ Instalación y Deploy
 
 ### Prerrequisitos
 
-- Cuenta AWS (Academy Lab o Free Tier)
+- Cuenta AWS con acceso a MWAA
 - AWS CLI configurado
-- Python 3.11+ o Node.js 18+
+- Node.js 18+ (para React)
+- Python 3.11+ (para Lambda y Airflow)
+- Git configurado
 
-### 1. Backend (Lambda + API Gateway + DynamoDB)
+---
+
+### 1. Frontend - AWS Amplify
+
+#### Opción A: Amplify Console (Recomendado)
+
+1. **Push código a GitHub**:
+```bash
+git add .
+git commit -m "Initial commit"
+git push origin main
+```
+
+2. **Conectar Amplify a GitHub**:
+- Ir a AWS Amplify Console
+- New App → Host web app → GitHub
+- Autorizar AWS Amplify
+- Seleccionar repositorio y branch `main`
+- Amplify detecta React automáticamente
+
+3. **Configurar build** (amplify.yml):
+```yaml
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: build
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+```
+
+4. **Deploy automático**: 
+- Amplify hace build y deploy
+- URL: `https://main.d1234abcd.amplifyapp.com`
+
+#### Opción B: Amplify CLI
 
 ```bash
-# Crear tabla DynamoDB
+npm install -g @aws-amplify/cli
+amplify configure
+cd frontend
+amplify init
+amplify add hosting
+amplify publish
+```
+
+---
+
+### 2. Backend - Lambda + API Gateway
+
+#### REST API
+
+```bash
+# Crear función Lambda incident-handler
+cd backend/lambda/incident-handler
+zip -r function.zip .
+aws lambda create-function \
+  --function-name incident-handler \
+  --runtime python3.11 \
+  --role arn:aws:iam::ACCOUNT:role/lambda-execution-role \
+  --handler lambda_function.lambda_handler \
+  --zip-file fileb://function.zip \
+  --timeout 30
+
+# Crear REST API (via Console o CLI)
+aws apigatewayv2 create-api \
+  --name alertautec-rest-api \
+  --protocol-type HTTP \
+  --target arn:aws:lambda:REGION:ACCOUNT:function:incident-handler
+```
+
+#### WebSocket API
+
+```bash
+# Lambda ws-connect
+cd backend/lambda/ws-connect
+zip -r function.zip .
+aws lambda create-function \
+  --function-name ws-connect \
+  --runtime python3.11 \
+  --role arn:aws:iam::ACCOUNT:role/lambda-ws-role \
+  --handler lambda_function.lambda_handler \
+  --zip-file fileb://function.zip
+
+# Crear WebSocket API
+aws apigatewayv2 create-api \
+  --name alertautec-websocket \
+  --protocol-type WEBSOCKET \
+  --route-selection-expression '$request.body.action'
+
+# Agregar rutas $connect, $disconnect, $default
+# Ver ARQUITECTURA_FINAL.md para detalles completos
+```
+
+---
+
+### 3. Base de Datos - DynamoDB
+
+```bash
+# Tabla de incidentes (con Streams)
 aws dynamodb create-table \
   --table-name alertautec-incidents \
   --attribute-definitions AttributeName=incidentId,AttributeType=S \
   --key-schema AttributeName=incidentId,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES
+
+# Tabla de conexiones WebSocket
+aws dynamodb create-table \
+  --table-name alertautec-connections \
+  --attribute-definitions AttributeName=connectionId,AttributeType=S \
+  --key-schema AttributeName=connectionId,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST
 
-# Crear bucket para fotos
+# Conectar Stream a Lambda notify-changes
+aws lambda create-event-source-mapping \
+  --function-name notify-changes \
+  --event-source-arn arn:aws:dynamodb:REGION:ACCOUNT:table/alertautec-incidents/stream/... \
+  --starting-position LATEST
+```
+
+---
+
+### 4. Storage - S3
+
+```bash
+# Bucket para fotos
 aws s3 mb s3://alertautec-photos
 aws s3api put-bucket-cors --bucket alertautec-photos --cors-configuration file://cors.json
 
-# Crear función Lambda
-cd backend
-zip function.zip lambda_function.py
-aws lambda create-function \
-  --function-name incident-handler \
-  --runtime python3.11 \
-  --role arn:aws:iam::YOUR-ACCOUNT:role/lambda-role \
-  --handler lambda_function.lambda_handler \
-  --zip-file fileb://function.zip \
-  --timeout 30 \
-  --memory-size 512
+# Bucket para Airflow DAGs
+aws s3 mb s3://alertautec-airflow
+aws s3 sync airflow/dags/ s3://alertautec-airflow/dags/
 
-# Crear API Gateway (manual via Console o SAM)
+# Bucket para reportes
+aws s3 mb s3://alertautec-reports
 ```
 
-### 2. Frontend (S3 Static Website)
+---
+
+### 5. Orquestación - Apache Airflow (MWAA)
 
 ```bash
-# Crear bucket
-aws s3 mb s3://alertautec-frontend
+# Crear entorno MWAA (via Console o CloudFormation)
+aws mwaa create-environment \
+  --name alertautec-airflow \
+  --execution-role-arn arn:aws:iam::ACCOUNT:role/mwaa-execution-role \
+  --source-bucket-arn arn:aws:s3:::alertautec-airflow \
+  --dag-s3-path dags/ \
+  --network-configuration SubnetIds=subnet-xxx,subnet-yyy,SecurityGroupIds=sg-xxx \
+  --environment-class mw1.small \
+  --max-workers 2
 
-# Configurar Static Website Hosting
-aws s3 website s3://alertautec-frontend --index-document index.html
+# Esperar ~30 minutos para que el entorno esté listo
 
-# Hacer público
-aws s3api put-bucket-policy --bucket alertautec-frontend --policy file://bucket-policy.json
+# Subir DAGs
+aws s3 sync airflow/dags/ s3://alertautec-airflow/dags/
 
-# Subir archivos
-cd frontend
-aws s3 sync . s3://alertautec-frontend --acl public-read
-
-# URL: http://alertautec-frontend.s3-website-us-east-1.amazonaws.com
+# Acceder a Airflow UI
+# URL: https://YOUR-ENV-NAME.airflow.us-east-1.amazonaws.com/home
 ```
 
-### 3. Configurar Frontend con API URL
+**⚠️ Nota**: MWAA puede no estar disponible en AWS Academy Lab. Ver alternativas en ARQUITECTURA_FINAL.md
+
+---
+
+### 6. Autenticación - Cognito (Opcional)
+
+```bash
+# Crear User Pool
+aws cognito-idp create-user-pool \
+  --pool-name alertautec-users \
+  --auto-verified-attributes email
+
+# Crear grupos
+aws cognito-idp create-group \
+  --user-pool-id us-east-1_XXXXX \
+  --group-name estudiantes
+
+aws cognito-idp create-group \
+  --user-pool-id us-east-1_XXXXX \
+  --group-name autoridades
+```
+
+---
+
+### 7. Configurar Frontend con URLs
+
+Actualizar en `frontend/src/config.js`:
 
 ```javascript
-// En frontend/app.js, actualizar:
-const API_URL = 'https://YOUR-API-ID.execute-api.us-east-1.amazonaws.com/prod';
+export const config = {
+  apiUrl: 'https://abc123.execute-api.us-east-1.amazonaws.com/prod',
+  wsUrl: 'wss://xyz789.execute-api.us-east-1.amazonaws.com/prod',
+  region: 'us-east-1',
+  cognitoUserPoolId: 'us-east-1_XXXXX',
+  cognitoClientId: 'xxxxxxxxxxxxx'
+};
 ```
+
+Commit y push → Amplify redeploy automático
 
 ## 📖 Uso
 
@@ -224,23 +440,28 @@ aws logs tail /aws/lambda/incident-handler --follow
 aws logs tail /aws/apigateway/api-id --follow
 ```
 
-## 🛣️ Roadmap (Fase 2)
+## 🛣️ Roadmap
 
-### Features Planificadas
+### ✅ Implementado (MVP)
 
-- [ ] **Amazon Cognito**: Autenticación robusta con MFA
-- [ ] **WebSocket API**: Tiempo real <100ms (sin polling)
-- [ ] **Apache Airflow**: Orquestación de workflows
-  - Clasificación automática
-  - Envío de notificaciones
-  - Reportes periódicos
-- [ ] **Amazon SageMaker**: Machine Learning
-  - Clasificación automática de tipo
-  - Predicción de urgencia
-  - Detección de zonas de riesgo
-- [ ] **SNS/SES**: Notificaciones email/SMS
+- [x] AWS Amplify frontend con React
+- [x] WebSocket API para tiempo real
+- [x] Apache Airflow para orquestación
+- [x] CRUD completo de incidentes
+- [x] Autenticación con Cognito
+- [x] Upload de fotos a S3
+- [x] DynamoDB Streams para notificaciones
+- [x] Panel administrativo
+
+### 📋 Fase 2 (Futuro)
+
+- [ ] **Amazon SageMaker**: ML para clasificación automática
 - [ ] **QuickSight**: Dashboards y analytics
+- [ ] **SNS + SES**: Notificaciones email/SMS robustas
 - [ ] **App móvil**: React Native
+- [ ] **Multi-región**: Alta disponibilidad global
+- [ ] **API GraphQL**: AppSync como alternativa
+- [ ] **Testing**: Jest + Cypress E2E
 
 ## 👥 Equipo
 
@@ -262,8 +483,9 @@ aws logs tail /aws/apigateway/api-id --follow
 
 ## 📄 Documentación Adicional
 
-- [Arquitectura Completa (MVP 24h)](./ARQUITECTURA_MVP_24H.md)
-- [Diagramas Eraser.io](./DIAGRAMA_ERASER_IO.md)
+- **[Arquitectura Completa con Amplify + WebSocket + Airflow](./ARQUITECTURA_FINAL.md)** ⭐
+- **[Diagramas para Eraser.io](./DIAGRAMA_FINAL.md)** ⭐
+- [Arquitectura MVP 24h (alternativa simplificada)](./ARQUITECTURA_MVP_24H.md)
 - [Challenge Original](./challenge.md)
 - [Bases Hackathon](./bases.md)
 
