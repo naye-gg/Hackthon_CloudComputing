@@ -1,0 +1,23 @@
+{
+  "name": "alerta-utec-backend",
+  "version": "1.0.0",
+  "description": "Sistema de alertas UTEC - Backend serverless",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f"
+  },
+  "keywords": ["serverless", "aws", "lambda", "dynamodb", "websocket"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.1691.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "serverless": "^3.38.0"
+  }
+}

@@ -1,0 +1,130 @@
+service: alerta-utec-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: dev
+  iam:
+    role: arn:aws:iam::429096294781:role/LabRole
+
+functions:
+
+  # AUTH
+  register:
+    handler: src/auth/register.handler
+    events:
+      - http:
+          path: auth/register
+          method: post
+          cors: true
+
+  login:
+    handler: src/auth/login.handler
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors: true
+
+  # INCIDENTES
+  crearIncidente:
+    handler: src/incidentes/crearIncidente.handler
+    events:
+      - http:
+          path: incidentes
+          method: post
+          cors: true
+
+  listarIncidentes:
+    handler: src/incidentes/listarIncidentes.handler
+    events:
+      - http:
+          path: incidentes
+          method: get
+          cors: true
+
+  obtenerIncidente:
+    handler: src/incidentes/obtenerIncidente.handler
+    events:
+      - http:
+          path: incidentes/{id}
+          method: get
+          cors: true
+
+  actualizarEstado:
+    handler: src/incidentes/actualizarEstado.handler
+    events:
+      - http:
+          path: incidentes/{id}/estado
+          method: patch
+          cors: true
+
+  # WEBSOCKETS
+  wsConnect:
+    handler: src/websocket/connect.handler
+    events:
+      - websocket:
+          route: $connect
+
+  wsDisconnect:
+    handler: src/websocket/disconnect.handler
+    events:
+      - websocket:
+          route: $disconnect
+
+  wsNotify:
+    handler: src/websocket/notify.handler
+    events:
+      - websocket:
+          route: notify
+
+resources:
+  Resources:
+
+    UsuariosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Usuarios
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    IncidentesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Incidentes
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: incidenteId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: incidenteId
+            KeyType: HASH
+
+    WebSocketConnections:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: WebSocketConnections
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: connectionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connectionId
+            KeyType: HASH
